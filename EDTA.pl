@@ -520,7 +520,7 @@ if ($force eq 1){
 	}
 
 # check results and report status
-die "ERROR: Raw LTR results not found in $genome.EDTA.raw/$genome.LTR.raw.fa and $genome.EDTA.raw/$genome.LTR.intact.raw.fa\n\tIf you believe the program is working properly, this may be caused by the lack of intact LTRs in your genome. Consider to use the --force 1 parameter to overwrite this check\n" unless (-s "$genome.LTR.raw.fa" and -s "$genome.LTR.intact.raw.fa");
+die "ERROR: Raw LTR results not found in $genome.EDTA.raw/$genome.LTR.raw.fa and $genome.EDTA.raw/$genome.LTR.intact.raw.fa\n\tIf you believe the program is working properly, this may be caused by the lack of intact LTRs in your genome. Consider to use the --force 1 parameter to overwrite this check\n" unless (-s "$genome.LTR.raw.fa" and -e "$genome.LTR.intact.raw.fa"); # allow 0 intact LTRs when the LTR library is not empty
 die "ERROR: Raw SINE results not found in $genome.EDTA.raw/$genome.SINE.raw.fa\n\tIf you believe the program is working properly, this may be caused by the lack of SINEs in your genome.\n" unless -e "$genome.SINE.raw.fa"; # allow empty file
 die "ERROR: Raw LINE results not found in $genome.EDTA.raw/$genome.LINE.raw.fa\n\tIf you believe the program is working properly, this may be caused by the lack of LINEs in your genome.\n" unless -e "$genome.LINE.raw.fa"; # allow empty file
 die "ERROR: Raw TIR results not found in $genome.EDTA.raw/$genome.TIR.intact.raw.fa\n\tIf you believe the program is working properly, this may be caused by the lack of intact TIRs in your genome. Consider to use the --force 1 parameter to overwrite this check\n" unless -s "$genome.TIR.intact.raw.fa";

@@ -88,7 +88,7 @@ foreach (@ARGV){
 # check files and dependencies
 die "Genome file $genome not exists!\n$usage" unless -s $genome;
 die "LTR raw library file $LTRraw not exists!\n$usage" unless -s $LTRraw;
-die "Intact LTR file $LTRintact not exists!\n$usage" unless -s $LTRintact;
+die "Intact LTR file $LTRintact not exists!\n$usage" unless -e $LTRintact; # allow empty file
 #die "LINE raw library file $LINEraw not exists!\n$usage" unless -e $LINE; # allow empty file
 #die "SINE raw library file $SINEraw not exists!\n$usage" unless -e $SINE; # allow empty file
 die "TIR raw library file $TIRraw not exists!\n$usage" unless -s $TIRraw;
