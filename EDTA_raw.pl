@@ -498,11 +498,23 @@ chdir "$genome.EDTA.raw/SINE" or die "ERROR: cannot enter $genome.EDTA.raw/SINE:
 # run AnnoSINE_v2
 if (-s "Seed_SINE.fa"){
 	print STDERR "$date\tExisting result file Seed_SINE.fa found!\n\t\tWill keep this file without rerunning this module.\n\t\tPlease specify --overwrite 1 if you want to rerun AnnoSINE_v2.\n\n";
-	} else { 
+	} elsif (&annosine_no_candidate()){
+	print STDERR "$date\tThe previous AnnoSINE run left no SINE candidates after TRF filtering.\n\t\tWill not rerun this module.\n\t\tPlease specify --overwrite 1 if you want to rerun AnnoSINE_v2.\n\n";
+	} else {
 	# use its own #! line (conda points it to the env's python); the upstream script has none
 	my $run_annosine = `head -c 2 ${annosine}AnnoSINE_v2` eq '#!' ? "${annosine}AnnoSINE_v2" : "python3 ${annosine}AnnoSINE_v2";
 	my $status = system("$run_annosine --temp_dir $genome_file_real_path.EDTA.raw/SINE/ -t $threads -a 2 --num_alignments 50000 -rpm 0 --copy_number 3 --shift 100 -auto 1 3 $genome ./ > annosine.log 2>&1");
+	# AnnoSINE_v2 exits with error in Step 6 (irf .dat missing) when no candidate passes the Step 5 TRF filter; that is 0 SINEs
+	if ($status != 0 and &annosine_no_candidate()){
+		print STDERR "$date\tAnnoSINE found no SINE candidates after TRF filtering; taken as 0 SINEs.\n\n";
+		$status = 0;
+		}
 	die "ERROR: AnnoSINE exited with error, please check $genome.EDTA.raw/SINE/annosine.log\n\n" if $status != 0;
+	}
+
+# AnnoSINE_v2 got through Step 4 and its Step 5 TRF filter kept nothing (called inside $genome.EDTA.raw/SINE)
+sub annosine_no_candidate {
+	return (!-s "Seed_SINE.fa" and -s "Step4_rna_output.fasta.2.5.7.80.10.10.2000.dat" and -e "Step5_trf_output.fasta" and -z "Step5_trf_output.fasta") ? 1 : 0;
 	}
 
 # filter and reclassify AnnoSINE candidates with TEsorter and make SINE library
@@ -585,7 +597,15 @@ if ($overwrite eq 0 and -s "$genome-families.fa"){
 	print STDERR "$date\tIdentify LINE retrotransposon candidates from scratch.\n\n";
 	my $status; # record status of RepeatModeler execution
 	`${repeatmodeler}BuildDatabase -name $genome $genome`;
-	$status = system("${repeatmodeler}RepeatModeler -engine ncbi -threads $threads -database $genome  > repeatmodeler.log 2>&1");
+	# resume the latest interrupted run (an RM_* directory with a rmod.log) instead of starting over; keep its log
+	my ($rm_recover) = sort { -M $a <=> -M $b } grep { -d $_ and -s "$_/rmod.log" } glob("RM_*");
+	my $rm_recover_opt = '';
+	if ($overwrite eq 0 and defined $rm_recover){
+		$rm_recover_opt = "-recoverDir $rm_recover";
+		print STDERR "$date\tResume RepeatModeler from $genome.EDTA.raw/LINE/$rm_recover\n\n";
+		`cat repeatmodeler.log >> repeatmodeler.log.prev 2>/dev/null`;
+		}
+	$status = system("${repeatmodeler}RepeatModeler -engine ncbi -threads $threads -database $genome $rm_recover_opt > repeatmodeler.log 2>&1");
 	if ($status != 0) {
 		# Execute the old version of RepeatModeler
 		warn "RepeatModeler failed with -threads, retrying with -pa...\n";
